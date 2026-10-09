@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Donnez votre avis</title>
+<style>
+:root{--bg:#f4f7f6;--card:#fff;--tx:#1d2b2a;--mut:#667;--ac:#09b1ba;--bd:#d8e2e0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121a19;--card:#1b2625;--tx:#eaf2f1;--mut:#9fb0ae;--bd:#2c3b3a}}
+:root[data-theme="dark"]{--bg:#121a19;--card:#1b2625;--tx:#eaf2f1;--mut:#9fb0ae;--bd:#2c3b3a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;display:flex;justify-content:center;padding:20px 14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:24px;width:100%;max-width:460px}
+h1{font-size:1.4rem;margin:0 0 6px}
+p{color:var(--mut);margin:0 0 18px;line-height:1.45}
+label{display:block;font-weight:600;margin:14px 0 6px;font-size:.95rem}
+input,textarea{width:100%;padding:11px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font:inherit}
+textarea{min-height:110px;resize:vertical}
+.stars{display:flex;gap:4px}
+.stars button{background:none;border:0;font-size:2rem;cursor:pointer;color:var(--bd);padding:0 2px;line-height:1}
+.stars button.on{color:#f5b301}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{border:1px solid var(--bd);background:var(--bg);color:var(--tx);border-radius:20px;padding:7px 12px;cursor:pointer;font:inherit;font-size:.9rem}
+.chips button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.go{margin-top:20px;width:100%;padding:13px;border:0;border-radius:12px;background:var(--ac);color:#fff;font:inherit;font-weight:700;cursor:pointer}
+.go:disabled{opacity:.5;cursor:not-allowed}
+#out{display:none;margin-top:18px}
+#out pre{white-space:pre-wrap;background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:12px;font:inherit;margin:0 0 10px}
+.note{font-size:.85rem;color:var(--mut);margin-top:10px}
+</style>
+</head>
+<body>
+<main class="card">
+  <h1>Merci pour votre achat ! 🛍️</h1>
+  <p>Votre avis m'aide beaucoup. Cela prend 30 secondes.</p>
+
+  <label>Votre note</label>
+  <div class="stars" id="stars"></div>
+
+  <label>Ce que vous avez aimé</label>
+  <div class="chips" id="chips"></div>
+
+  <label for="name">Votre prénom (facultatif)</label>
+  <input id="name" maxlength="40" placeholder="Ex : Sarah">
+
+  <label for="txt">Votre commentaire</label>
+  <textarea id="txt" maxlength="600" placeholder="Article conforme, envoi rapide…"></textarea>
+
+  <button class="go" id="go" disabled>Préparer mon avis</button>
+
+  <div id="out">
+    <pre id="msg"></pre>
+    <button class="go" id="copy">Copier l'avis</button>
+    <p class="note">Collez-le ensuite dans la conversation Vinted avec le vendeur, ou dans l'évaluation de la commande. Merci ! 💚</p>
+  </div>
+</main>
+<script>
+// Colle ici ton lien Formspree pour recevoir les avis par mail (laisse vide sinon)
+var ENDPOINT='';
+var rating=0, tags=[];
+var starsEl=document.getElementById('stars'), chipsEl=document.getElementById('chips'), go=document.getElementById('go');
+for(var i=1;i<=5;i++){(function(n){var b=document.createElement('button');b.type='button';b.textContent='★';b.setAttribute('aria-label',n+' étoiles');b.onclick=function(){rating=n;paint();};starsEl.appendChild(b);})(i);}
+['Envoi rapide','Bien emballé','Conforme à la description','Vendeur sympa','Bon prix'].forEach(function(t){var b=document.createElement('button');b.type='button';b.textContent=t;b.onclick=function(){var k=tags.indexOf(t);if(k>-1)tags.splice(k,1);else tags.push(t);b.classList.toggle('on');};chipsEl.appendChild(b);});
+function paint(){[].forEach.call(starsEl.children,function(b,i){b.classList.toggle('on',i<rating);});go.disabled=!rating;}
+go.onclick=function(){
+  var name=document.getElementById('name').value.trim(), txt=document.getElementById('txt').value.trim();
+  var m='Mon avis : '+'★'.repeat(rating)+'☆'.repeat(5-rating)+' ('+rating+'/5)';
+  if(tags.length)m+='\n'+tags.join(' · ');
+  if(txt)m+='\n'+txt;
+  if(name)m+='\n— '+name;
+  document.getElementById('msg').textContent=m;
+  document.getElementById('out').style.display='block';
+  if(ENDPOINT){
+    go.disabled=true;go.textContent='Envoi…';
+    fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({avis:m,note:rating,prenom:name})})
+    .then(function(r){if(!r.ok)throw 0;go.textContent='Avis envoyé, merci ! ✓';document.getElementById('copy').style.display='none';document.querySelector('.note').textContent='Merci beaucoup pour votre retour 💚';})
+    .catch(function(){go.disabled=false;go.textContent='Réessayer';});
+  }
+};
+document.getElementById('copy').onclick=function(){
+  var t=document.getElementById('msg').textContent, btn=this;
+  function ok(){btn.textContent='Copié ✓';}
+  try{navigator.clipboard.writeText(t).then(ok,function(){fallback();});}catch(e){fallback();}
+  function fallback(){var r=document.createRange();r.selectNodeContents(document.getElementById('msg'));var s=getSelection();s.removeAllRanges();s.addRange(r);try{document.execCommand('copy');ok();}catch(e){}}
+};
+</script>
+</body>
+</html>
