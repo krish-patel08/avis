@@ -56,7 +56,7 @@ textarea{min-height:110px;resize:vertical}
 </main>
 <script>
 // Colle ici ton lien Formspree pour recevoir les avis par mail (laisse vide sinon)
-var ENDPOINT='';
+var ENDPOINT='https://formspree.io/f/xrpeqvgz';
 var rating=0, tags=[];
 var starsEl=document.getElementById('stars'), chipsEl=document.getElementById('chips'), go=document.getElementById('go');
 for(var i=1;i<=5;i++){(function(n){var b=document.createElement('button');b.type='button';b.textContent='★';b.setAttribute('aria-label',n+' étoiles');b.onclick=function(){rating=n;paint();};starsEl.appendChild(b);})(i);}
